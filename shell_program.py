@@ -23,16 +23,27 @@ import time
 # args = parser.parse_args()
 
 def shell_flash(shell_file, card_bdf):
-    try:
-        # cmd = "/opt/xilinx/xrt/bin/xbmgmt flash --shell --primary %s --card %s" % (shell_file, card_bdf)
-        cmd = "/opt/xilinx/xrt/bin/xbmgmt scan"
-        print("命令%s开始运行%s" % (cmd, datetime.datetime.now() ))
-        os.system(cmd)
-        print("命令%s结束运行%s" % (cmd, datetime.datetime.now()))
-    except :       #异常处理,此处声明.没有刻意计划异常处理,(只确保我执行的linux命令键入正确即可),[所以有报错也不会打印如下异常])
-        print('命令%s\t 运行失败,失败原因\r\n%s' % (cmd,e))
+    
+    cmd = "/opt/xilinx/xrt/bin/xbmgmt scan"
+    os.system(cmd)
+
+    # try:
+    #     # cmd = "/opt/xilinx/xrt/bin/xbmgmt flash --shell --primary %s --card %s" % (shell_file, card_bdf)
+    #     cmd = "/opt/xilinx/xrt/bin/xbmgmt scan"
+    #     # print("命令%s开始运行%s" % (cmd, datetime.datetime.now() ))
+    #     os.system(cmd)
+    #     # print("命令%s结束运行%s" % (cmd, datetime.datetime.now()))
+    # except :       #异常处理,此处声明.没有刻意计划异常处理,(只确保我执行的linux命令键入正确即可),[所以有报错也不会打印如下异常])
+    #     print('命令%s\t 运行失败,失败原因\r\n%s' % (cmd))
+
 
 if __name__ == '__main__':
+
+    print ("python version is %s " % sys.version)
+
+    if sys.version_info[0] < 3:
+        print ("Must be using Python 3")
+        exit(1)
 
     if len(sys.argv) != 3:
         print ("Usage: python shell_program <shell_file> <card_bdf>\n")
@@ -63,36 +74,49 @@ if __name__ == '__main__':
     outs = exec_cmd.stdout.readlines()
     print (outs)
     for out in outs:
-        if 'Processing accelerators: Xilinx Corporation Device d03c' in out:
+        if b'Processing accelerators: Xilinx Corporation Device d03c' in out:
             bdf_list.append(out[0:7])
             
-    print (bdf_list)
 
     if len(bdf_list) == 0:
         print ("Can not find xilinx device, Please Check your system. abort!\n")
         exit(-1)
 
     # to do bdf检查参数
+    result=[]
     if dev_bdf == 'all':
          # start to flash the U30 shell
-        # 线程池
+        # 线程池s
+        print ("update all devices")
         threads = []
         pool = multiprocessing.Pool(processes=16)
-        
-        print (bdf_list)
+        print ("bdf_list %s" % bdf_list)
         for bdf in bdf_list:
             print (bdf)
             result.append(pool.apply_async(shell_flash, (shell_bin, bdf)))
+            print ("result %s" % result)
+            sys.exit(0)
     else:
-        print ("input bdf is %s" % dev_bdf)
-        if dev_bdf not in bdf_list:
+        print ("update device bdf is %s" % dev_bdf)
+        print (bdf_list)
+        print (dev_bdf.encode())
+        if dev_bdf.encode() not in bdf_list:
             print ("The %s is not in the system. abort!\n" % dev_bdf)
             exit(-1)
         else:
-            # cmd = "/opt/xilinx/xrt/bin/xbmgmt flash --shell --primary %s --card %s" % (shell_bin, dev_bdf)
-            cmd = "/opt/xilinx/xrt/bin/xbmgmt scan"
+            cmd = "/opt/xilinx/xrt/bin/xbmgmt flash --shell --primary %s --card %s" % (shell_bin, dev_bdf)
+            print("caution!! the program take several mins,  please do not stop the program until it return!")
             exec_cmd = subprocess.Popen(args=cmd, stdout=subprocess.PIPE, shell=True)
             outs = exec_cmd.stdout.readlines()
+            if b'Shell is updated successfully\n' in outs:
+                print ("Shell update success！")
+                print ("outs %s" % outs)
+                sys.exit(0)
+            else:
+                print ("Shell update fail！")
+                print ("outs %s" % outs)
+                sys.exit(-1)
+
             
 
        
