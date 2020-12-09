@@ -16,11 +16,17 @@ import sys
 import subprocess
 import multiprocessing
 import time
+import argparse
+import hashlib
 
-# import argparse
-# parser = argparse.ArgumentParser(prog='shell_program', description='used for upgrade xilinx alveo card shell')
-# parser.add_argument('-f', metavar='N', type=str, help='the path of shell file')
-# args = parser.parse_args()
+def md5sum(filename):             
+    with open(filename, 'rb') as f:
+        md5obj = hashlib.md5()
+        md5obj.update(f.read())
+        _hash = md5obj.hexdigest()
+        
+    return str(_hash)
+
 
 def flash_shell(shell_file, card_bdf):
 
@@ -35,12 +41,13 @@ def flash_shell(shell_file, card_bdf):
 
     while True:
         poll = exec_cmd.poll()
-        print ("programing device %s ..." % card_bdf)
+        print ("programing device %s ...\n" % card_bdf)
         if poll != None:
             break
         time.sleep(5)
 
     outs = exec_cmd.stdout.readlines()
+    # print (outs)
 
     if b'Shell is updated successfully\n' in outs:
         # print ("outs %s" % outs)
@@ -66,14 +73,28 @@ if __name__ == '__main__':
         print ("Must be using Python 3")
         exit(1)
 
-    if len(sys.argv) != 3:
-        print ("Usage: python3 shell_program <shell_file> <card_bdf>\n ")
-        print ("example: python3 shell_program ./u30_img.bin all ---program all xilinx device in the system\n ")
-        print ("example: python3 shell_program ./u30_img.bin 86:00.0 ---program device 86:00.0\n ")
-        exit(1)
+    # parameter check
+    # if len(sys.argv) != 3:
+    #     print ("Usage: python3 shell_program <shell_file> <card_bdf>\n ")
+    #     print ("example: python3 shell_program ./u30_img.bin all ---program all xilinx device in the system\n ")
+    #     print ("example: python3 shell_program ./u30_img.bin 86:00.0 ---program device 86:00.0\n ")
+    #     exit(1)
 
-    shell_bin = sys.argv[1]
-    dev_bdf = sys.argv[2]
+    # shell_bin = sys.argv[1]
+    # dev_bdf = sys.argv[2]
+
+    parser = argparse.ArgumentParser(prog='shell_program', description='this program is used for upgrade xilinx alveo card shell')
+    parser.add_argument('file', type=str, help='Specify the shell file')
+    parser.add_argument('device_bdf', type=str,help='Specify the device, for example all or 86:00.0, "all" mean update all u30 devices in the system')
+    args = parser.parse_args()
+
+    if args.file:
+        shell_bin = args.file
+
+    if args.device_bdf:
+        dev_bdf = args.device_bdf
+
+
         
     # program need root user
     if os.geteuid() != 0:
@@ -88,7 +109,12 @@ if __name__ == '__main__':
 
     # check if the programed bin is exist
     if (os.path.exists(shell_bin) == False):
-        print ("can not find the shell file, Please input correct file path. Abort!.\n")
+        print ("Can not find the shell file, Please input correct file path. Abort!.\n")
+        sys.exit(1)
+
+    #file check sum
+    if (md5sum(shell_bin) != '46729d1a34101090d7a88e840e1053b3'):
+        print ("Input file %s md5 check sum error. Abort!.\n" % shell_bin)
         sys.exit(1)
 
     # get the local bdf list
@@ -104,7 +130,7 @@ if __name__ == '__main__':
         exit(-1)
         
 
-    # to do bdf检查参数
+    # to do bdf check
     results = []
     if dev_bdf == 'all':
 
@@ -123,9 +149,9 @@ if __name__ == '__main__':
         # for result in results:
         #     print ("result %s\n" % result)
                     
-        # 关闭进程池，不再接收新的请求
+        # close pool，do not get process request any more
         pool.close()
-        # 等待pool中所有子进程执行完成
+        # waiting for all subprocess complete
         pool.join()
         print('update Finish')
         print(return_list)
