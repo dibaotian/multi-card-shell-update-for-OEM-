@@ -1,7 +1,7 @@
 # multi-card-shell-update-for-OEM-
 this is a python tool simultaneous upgrade multi-card for OEM
 
-##Function
+## Function
 ###This script support both single ALVEO card and multiple cards shell program simultaneously 
 ###It will create dedicate burn process for each card, So the multi-card update took time is same as one card
 ##usage:
