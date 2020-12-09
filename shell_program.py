@@ -41,7 +41,7 @@ def flash_shell(shell_file, card_bdf):
 
     while True:
         poll = exec_cmd.poll()
-        print ("programing device %s ...\n" % card_bdf)
+        print ("programing device %s ......" % card_bdf)
         if poll != None:
             break
         time.sleep(5)
@@ -138,7 +138,7 @@ if __name__ == '__main__':
         print("Caution!! the program take several mins,  please do not stop the program until it return!")
         print ("update %s devices %s \n" % (len(bdf_list), bdf_list))
         
-        # 进程池
+        # process pool
         pool = multiprocessing.Pool(processes=16)
 
         for bdf in bdf_list:
