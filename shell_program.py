@@ -30,7 +30,6 @@ def flash_shell(shell_file, card_bdf):
         card_bdf = card_bdf.decode()
 
     cmd = "/opt/xilinx/xrt/bin/xbmgmt flash --shell --primary %s --card %s" % (shell_bin, card_bdf)
-    print("Caution!! the program take several mins,  please do not stop the program until it return!")
     print("Start program device %s .... \n" %  card_bdf)
     exec_cmd = subprocess.Popen(args=cmd, stdout=subprocess.PIPE, shell=True)
 
@@ -46,23 +45,31 @@ def flash_shell(shell_file, card_bdf):
     if b'Shell is updated successfully\n' in outs:
         # print ("outs %s" % outs)
         print ("device %s update success！\n" % card_bdf)
+        return (card_bdf, 0)
         # sys.exit(0)
     else:
         print ("%s" % outs)
         print ("device %s update fail！\n" % card_bdf)
+        return (card_bdf, -1)
         # sys.exit(-1)
 
+return_list = []
+def return_log(result):
+    return_list.append(result)
 
 if __name__ == '__main__':
 
     print ("ENV: %s \n" % sys.version)
 
+    # need python3 support
     if sys.version_info[0] < 3:
         print ("Must be using Python 3")
         exit(1)
 
     if len(sys.argv) != 3:
-        print ("Usage: python shell_program <shell_file> <card_bdf>\n")
+        print ("Usage: python3 shell_program <shell_file> <card_bdf>\n ")
+        print ("example: python3 shell_program ./u30_img.bin all ---program all xilinx device in the system\n ")
+        print ("example: python3 shell_program ./u30_img.bin 86:00.0 ---program device 86:00.0\n ")
         exit(1)
 
     shell_bin = sys.argv[1]
@@ -101,34 +108,35 @@ if __name__ == '__main__':
     results = []
     if dev_bdf == 'all':
 
-         # start to flash the U30 shell
-        print ("find %s devices %s \n" % (len(bdf_list), bdf_list))
-        # print ("update all devices")
+        # start to flash the U30 shell
+        print("Caution!! the program take several mins,  please do not stop the program until it return!")
+        print ("update %s devices %s \n" % (len(bdf_list), bdf_list))
         
         # 进程池
         pool = multiprocessing.Pool(processes=16)
 
         for bdf in bdf_list:
-            results.append(pool.apply_async(flash_shell, (shell_bin, bdf)))
+            results.append(pool.apply_async(flash_shell, (shell_bin, bdf), callback = return_log))
         
         # [result.wait() for result in results]
-        for result in results:
-            print ("result %s\n" % result)
+
+        # for result in results:
+        #     print ("result %s\n" % result)
                     
         # 关闭进程池，不再接收新的请求
         pool.close()
         # 等待pool中所有子进程执行完成
         pool.join()
         print('update Finish')
+        print(return_list)
         sys.exit(0)
     else:
         print ("update device bdf is %s" % dev_bdf)
-        print (bdf_list)
-        print (dev_bdf.encode())
         if dev_bdf.encode() not in bdf_list:
             print ("The %s is not in the system. abort!\n" % dev_bdf)
             exit(-1)
         else:
+            print("Caution!! the program take several mins,  please do not stop the program until it return!")
             flash_shell(shell_bin, dev_bdf)
 
             # cmd = "/opt/xilinx/xrt/bin/xbmgmt flash --shell --primary %s --card %s" % (shell_bin, dev_bdf)
