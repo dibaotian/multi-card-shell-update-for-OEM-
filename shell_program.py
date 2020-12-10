@@ -30,9 +30,9 @@ def md5sum(filename):
 
 def flash_shell(shell_file, card_bdf):
 
-    # 判断card_bdf类型
+    # judge the input parameter card_bdf type
     if isinstance(card_bdf, bytes):
-        #转换成string
+        # it type is bytes, decode to string
         card_bdf = card_bdf.decode()
 
     cmd = "/opt/xilinx/xrt/bin/xbmgmt flash --shell --primary %s --card %s" % (shell_bin, card_bdf)
