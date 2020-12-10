@@ -122,6 +122,7 @@ if __name__ == '__main__':
     exec_cmd = subprocess.Popen(args='lspci -d 10ee:', stdout=subprocess.PIPE, shell=True)
     outs = exec_cmd.stdout.readlines()
     for out in outs:
+        # device id d03c mean U30, It can be extend to other device in the future
         if b'Processing accelerators: Xilinx Corporation Device d03c' in out:
             bdf_list.append(out[0:7])        
 
